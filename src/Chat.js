@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ScrollToBottom from "react-scroll-to-bottom";
+import "./Chat.css";
 
 function Chat({ socket, username, room }) {
   const [currentMessage, setCurrentMessage] = useState("");
@@ -12,26 +13,21 @@ function Chat({ socket, username, room }) {
         author: username,
         message: currentMessage,
         time:
-          new Date(Date.now()).getHours() +
+          new Date().getHours().toString().padStart(2, "0") +
           ":" +
-          new Date(Date.now()).getMinutes(),
+          new Date().getMinutes().toString().padStart(2, "0"),
       };
 
-      await socket.emit("send_message", messageData);
-
-      // sender sees message instantly
+      socket.emit("send_message", messageData);
       setMessageList((list) => [...list, messageData]);
-
       setCurrentMessage("");
     }
   };
 
   useEffect(() => {
-    // 🔥 ISSUE #3 FIX: re-join room on mount / reconnect
     socket.emit("join_room", room);
 
     const handleReceiveMessage = (data) => {
-      // ✅ FILTER KEPT (as requested)
       if (data.author !== username) {
         setMessageList((list) => [...list, data]);
       }
@@ -45,26 +41,31 @@ function Chat({ socket, username, room }) {
   }, [socket, room, username]);
 
   return (
-    <div className="chat-window">
+    <div className="chat-container">
+      {/* HEADER */}
       <div className="chat-header">
-        <p>Live Chat</p>
+        <div>
+          <h3>Lets-Chat 💬</h3>
+          <span>Room: {room}</span>
+        </div>
+        <div className="user-name">{username}</div>
       </div>
 
+      {/* BODY */}
       <div className="chat-body">
         <ScrollToBottom className="message-container">
-          {messageList.map((messageContent, index) => (
+          {messageList.map((msg, index) => (
             <div
               key={index}
-              className="message"
-              id={username === messageContent.author ? "you" : "other"}
+              className={`message ${
+                msg.author === username ? "you" : "other"
+              }`}
             >
-              <div>
-                <div className="message-content">
-                  <p>{messageContent.message}</p>
-                </div>
+              <div className="message-bubble">
+                <p className="message-text">{msg.message}</p>
                 <div className="message-meta">
-                  <p id="time">{messageContent.time}</p>
-                  <p id="author">{messageContent.author}</p>
+                  <span>{msg.author}</span>
+                  <span>{msg.time}</span>
                 </div>
               </div>
             </div>
@@ -72,15 +73,16 @@ function Chat({ socket, username, room }) {
         </ScrollToBottom>
       </div>
 
+      {/* FOOTER */}
       <div className="chat-footer">
         <input
           type="text"
+          placeholder="Type a message..."
           value={currentMessage}
-          placeholder="Hey..."
           onChange={(e) => setCurrentMessage(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
-        <button onClick={sendMessage}>&#9658;</button>
+        <button onClick={sendMessage}>➤</button>
       </div>
     </div>
   );
