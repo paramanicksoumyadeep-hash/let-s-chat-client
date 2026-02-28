@@ -1,44 +1,68 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ScrollToBottom from "react-scroll-to-bottom";
-import "./chat.css";
 
 function Chat({ socket, username, room }) {
   const [currentMessage, setCurrentMessage] = useState("");
   const [messageList, setMessageList] = useState([]);
+  const fileInputRef = useRef(null);
 
-  const sendMessage = async () => {
-    if (currentMessage.trim() !== "") {
-      const messageData = {
-        room,
-        author: username,
-        message: currentMessage,
-        time:
-          new Date().getHours().toString().padStart(2, "0") +
-          ":" +
-          new Date().getMinutes().toString().padStart(2, "0"),
-      };
+  const sendMessage = () => {
+    if (!currentMessage.trim()) return;
 
-      socket.emit("send_message", messageData);
-      setMessageList((list) => [...list, messageData]);
-      setCurrentMessage("");
-    }
+    const messageData = {
+      room,
+      author: username,
+      message: currentMessage,
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+
+    socket.emit("send_message", messageData);
+    setMessageList((list) => [...list, messageData]);
+    setCurrentMessage("");
   };
 
   useEffect(() => {
+    const savedBg = localStorage.getItem("chatBackground");
+    if (savedBg) {
+      document.documentElement.style.setProperty(
+        "--chat-bg",
+        `url(${savedBg})`
+      );
+    }
+  }, []);
+  useEffect(() => {
     socket.emit("join_room", room);
 
-    const handleReceiveMessage = (data) => {
-      if (data.author !== username) {
-        setMessageList((list) => [...list, data]);
-      }
-    };
+    socket.on("receive_message", (data) => {
+      setMessageList((list) => [...list, data]);
+    });
 
-    socket.on("receive_message", handleReceiveMessage);
+    return () => socket.off("receive_message");
+  }, [socket, room]);
 
-    return () => {
-      socket.off("receive_message", handleReceiveMessage);
+  const handleBackgroundChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Please select an image under 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imageUrl = reader.result;
+      document.documentElement.style.setProperty(
+        "--chat-bg",
+        `url(${imageUrl})`
+      );
+      localStorage.setItem("chatBackground", imageUrl);
     };
-  }, [socket, room, username]);
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="chat-container">
@@ -48,7 +72,24 @@ function Chat({ socket, username, room }) {
           <h3>Lets-Chat 💬</h3>
           <span>Room: {room}</span>
         </div>
-        <div className="user-name">{username}</div>
+
+        <div className="header-right">
+          <button
+            className="bg-btn"
+            onClick={() => fileInputRef.current.click()}
+          >
+            Change BG
+          </button>
+          <div className="user-name">{username}</div>
+        </div>
+
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleBackgroundChange}
+          style={{ display: "none" }}
+        />
       </div>
 
       {/* BODY */}
@@ -89,4 +130,3 @@ function Chat({ socket, username, room }) {
 }
 
 export default Chat;
-
