@@ -72,7 +72,7 @@ body {
 
   background-image: var(
     --chat-bg,
-    url("https://unsplash.com/photos/a-large-body-of-water-under-a-cloudy-sky-G9i_plbfDgk")
+    url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80")
   );
   background-size: cover;
   background-position: center;
