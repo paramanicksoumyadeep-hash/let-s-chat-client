@@ -1,15 +1,14 @@
-/* FULL SCREEN CONTAINER */
+
 .chat-container {
   width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0f172a; /* dark slate */
+  background: #0f172a; 
   color: white;
   font-family: "Segoe UI", sans-serif;
 }
 
-/* HEADER */
 .chat-header {
   height: 70px;
   background: #020617;
